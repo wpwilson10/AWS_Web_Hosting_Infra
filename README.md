@@ -1,4 +1,4 @@
-# WpwilsonSite
+# AWS_Web_Hosting_Infra
 
 This project deploys a serverless single-page application (SPA) using AWS services, with Terraform managing infrastructure as code.
 
