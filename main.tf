@@ -5,7 +5,7 @@
 
 module "client_files_s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "4.2.2"
+  version = "5.9.1"
 
   bucket_prefix = lower("${var.project_name}-client-files-")
   force_destroy = true
@@ -66,12 +66,10 @@ resource "aws_s3_object" "client_files" {
 ############################################
 
 module "route53_zone" {
-  source  = "terraform-aws-modules/route53/aws//modules/zones"
-  version = "4.1.0"
+  source  = "terraform-aws-modules/route53/aws"
+  version = "6.1.1"
 
-  zones = {
-    "${var.domain_name}" = {}
-  }
+  name = var.domain_name
 }
 
 ####################################################################
@@ -80,10 +78,10 @@ module "route53_zone" {
 
 module "acm_certificate" {
   source  = "terraform-aws-modules/acm/aws"
-  version = "5.1.1"
+  version = "6.2.0"
 
   domain_name = var.domain_name
-  zone_id     = module.route53_zone.route53_zone_zone_id[var.domain_name]
+  zone_id     = module.route53_zone.id
 
   subject_alternative_names = [
     "*.${var.domain_name}",
@@ -102,7 +100,7 @@ module "acm_certificate" {
 
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
-  version = "3.4.1"
+  version = "6.0.2"
 
   enabled             = true
   wait_for_deployment = false
@@ -121,7 +119,7 @@ module "cloudfront" {
         http_port              = 80
         https_port             = 443
         origin_protocol_policy = "http-only"
-        origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2", "SSLv3"]
+        origin_ssl_protocols   = ["TLSv1.2"]
       }
     }
   }
@@ -130,20 +128,18 @@ module "cloudfront" {
     target_origin_id       = "s3_website_endpoint"
     viewer_protocol_policy = "redirect-to-https"
 
-    allowed_methods      = ["GET", "HEAD"]
-    cached_methods       = ["GET", "HEAD"]
-    compress             = true
-    query_string         = true
-    use_forwarded_values = false # not allowed with cache policy
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods  = ["GET", "HEAD"]
+    compress        = true
 
     cache_policy_name          = "Managed-CachingOptimized"
     origin_request_policy_name = "Managed-CORS-CustomOrigin"
   }
 
   viewer_certificate = {
-    acm_certificate_arn = module.acm_certificate.acm_certificate_arn
-    minimum_protocol_version : "TLSv1.2_2021"
-    ssl_support_method : "sni-only"
+    acm_certificate_arn      = module.acm_certificate.acm_certificate_arn
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
   }
 
   custom_error_response = [{
@@ -155,30 +151,30 @@ module "cloudfront" {
 
 # Point our domain to the cloudfront distribution in Route53
 module "cloudfront_route53_record" {
-  source  = "terraform-aws-modules/route53/aws//modules/records"
-  version = "4.1.0"
+  source  = "terraform-aws-modules/route53/aws"
+  version = "6.1.1"
 
-  # https://github.com/terraform-aws-modules/terraform-aws-route53/issues/101
-  zone_name = module.route53_zone.route53_static_zone_name[var.domain_name]
+  create_zone = false
+  name        = var.domain_name
 
-  records = [
-    {
+  records = {
+    root = {
       name = ""
       type = "A"
       alias = {
         name    = module.cloudfront.cloudfront_distribution_domain_name
         zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
       }
-    },
-    {
+    }
+    www = {
       name = "www"
       type = "A"
       alias = {
         name    = module.cloudfront.cloudfront_distribution_domain_name
         zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
       }
-    },
-  ]
+    }
+  }
 
   depends_on = [module.cloudfront]
 }
@@ -190,7 +186,7 @@ module "cloudfront_route53_record" {
 
 module "api_gateway" {
   source  = "terraform-aws-modules/apigateway-v2/aws"
-  version = "5.2.1"
+  version = "6.0.0"
 
   name          = "${var.project_name}-Gateway"
   description   = "HTTP API Gateway that handles lights schedule configuration requests"
@@ -199,7 +195,7 @@ module "api_gateway" {
   # Custom domain
   domain_name = local.api_domain_name
   # Route53 Zone
-  hosted_zone_name = module.route53_zone.route53_zone_name[var.domain_name]
+  hosted_zone_name = module.route53_zone.name
   # ACM certificate
   domain_name_certificate_arn = module.acm_certificate.acm_certificate_arn
   # Disable creation of the ACM certificate for the custom domain since we have one already
