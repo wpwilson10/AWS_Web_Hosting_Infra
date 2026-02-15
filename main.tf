@@ -159,8 +159,8 @@ module "cloudfront_route53_record" {
 
   records = {
     root = {
-      name = ""
-      type = "A"
+      full_name = var.domain_name
+      type      = "A"
       alias = {
         name    = module.cloudfront.cloudfront_distribution_domain_name
         zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
@@ -175,8 +175,6 @@ module "cloudfront_route53_record" {
       }
     }
   }
-
-  depends_on = [module.cloudfront]
 }
 
 ####################################################

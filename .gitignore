@@ -33,3 +33,13 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Ignore Kiro development files
+.kiro
+
+# macOS
+.DS_Store
+
+# Python
+.venv
+__pycache__/
