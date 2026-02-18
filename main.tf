@@ -5,7 +5,7 @@
 
 module "client_files_s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "5.9.1"
+  version = "5.10.0"
 
   bucket_prefix = lower("${var.project_name}-client-files-")
   force_destroy = true
@@ -67,7 +67,7 @@ resource "aws_s3_object" "client_files" {
 
 module "route53_zone" {
   source  = "terraform-aws-modules/route53/aws"
-  version = "6.1.1"
+  version = "6.4.0"
 
   name = var.domain_name
 }
@@ -78,7 +78,7 @@ module "route53_zone" {
 
 module "acm_certificate" {
   source  = "terraform-aws-modules/acm/aws"
-  version = "6.2.0"
+  version = "6.3.0"
 
   domain_name = var.domain_name
   zone_id     = module.route53_zone.id
@@ -100,7 +100,7 @@ module "acm_certificate" {
 
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
-  version = "6.0.2"
+  version = "6.4.0"
 
   enabled             = true
   wait_for_deployment = false
@@ -152,7 +152,7 @@ module "cloudfront" {
 # Point our domain to the cloudfront distribution in Route53
 module "cloudfront_route53_record" {
   source  = "terraform-aws-modules/route53/aws"
-  version = "6.1.1"
+  version = "6.4.0"
 
   create_zone = false
   name        = var.domain_name
@@ -184,7 +184,7 @@ module "cloudfront_route53_record" {
 
 module "api_gateway" {
   source  = "terraform-aws-modules/apigateway-v2/aws"
-  version = "6.0.0"
+  version = "6.1.0"
 
   name          = "${var.project_name}-Gateway"
   description   = "HTTP API Gateway that handles lights schedule configuration requests"
